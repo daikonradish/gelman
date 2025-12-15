@@ -16,6 +16,8 @@ Wherever possible, Gelman is:
 
 Gelman functions are grouped according to their purpose.
 
+| Module | Contains |
+|--------|----------|
 | `summary` | Summary statistics of a sample dataset, such as `mean`, `variance`. `interquartile_range`. These typically take in a list of values and return one single value. |
 | `transform` | Applies a transformation to the entire dataset. Attention: these can either preserve the size of the dataset, or they can drop some elements. |
 | `discretize` | Produce a range of values that describe its frequences.| 
