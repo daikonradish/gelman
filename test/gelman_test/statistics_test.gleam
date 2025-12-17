@@ -1,14 +1,17 @@
 import gleam/float
+import gleam/int
 import gleam/list
 
-import gelman/summarize
+import gelman/statistics as stats
+
+import gelman/error.{InvalidParameter}
 
 pub fn zeros_test() -> Nil {
   let zeros = list.repeat(0.0, 100)
-  assert summarize.mean(zeros) == Ok(0.0)
-  assert summarize.variance(zeros) == Ok(0.0)
-  assert summarize.skewness(zeros) == Ok(0.0)
-  assert summarize.kurtosis(zeros) == Ok(0.0)
+  assert stats.mean(zeros) == Ok(0.0)
+  assert stats.variance(zeros) == Ok(0.0)
+  assert stats.skewness(zeros) == Ok(0.0)
+  assert stats.kurtosis(zeros) == Ok(0.0)
 }
 
 pub fn mean_test() -> Nil {
@@ -16,13 +19,13 @@ pub fn mean_test() -> Nil {
   let x2 = [-1.3077, -0.4336, 0.3426, 3.5784, 2.7694]
   let x3 = [-1.3499, 3.0349, 0.7254, -0.0631, 0.7147]
   let x4 = [-0.205, -0.1241, 1.4897, 1.409, 1.4172]
-  let assert Ok(m1) = summarize.mean(x1)
+  let assert Ok(m1) = stats.mean(x1)
   assert float.loosely_equals(m1, 0.25876, tolerating: 0.001)
-  let assert Ok(m2) = summarize.mean(x2)
+  let assert Ok(m2) = stats.mean(x2)
   assert float.loosely_equals(m2, 0.98982, tolerating: 0.001)
-  let assert Ok(m3) = summarize.mean(x3)
+  let assert Ok(m3) = stats.mean(x3)
   assert float.loosely_equals(m3, 0.6124, tolerating: 0.001)
-  let assert Ok(m4) = summarize.mean(x4)
+  let assert Ok(m4) = stats.mean(x4)
   assert float.loosely_equals(m4, 0.79736, tolerating: 0.001)
 }
 
@@ -31,16 +34,16 @@ pub fn variance_and_std_test() -> Nil {
   let x2 = [-1.3077, -0.4336, 0.3426, 3.5784, 2.7694]
   let x3 = [-1.3499, 3.0349, 0.7254, -0.0631, 0.7147]
   let x4 = [-0.205, -0.1241, 1.4897, 1.409, 1.4172]
-  let assert Ok(v1) = summarize.variance(x1)
+  let assert Ok(v1) = stats.variance(x1)
   // sorry i got lazy and stopped testing the rest since the code path is the same.
-  let assert Ok(std1) = summarize.standard_deviation(x1)
+  let assert Ok(std1) = stats.standard_deviation(x1)
   assert float.loosely_equals(v1, 1.8529, tolerating: 0.001)
   assert float.loosely_equals(v1, std1 *. std1, tolerating: 0.001)
-  let assert Ok(v2) = summarize.variance(x2)
+  let assert Ok(v2) = stats.variance(x2)
   assert float.loosely_equals(v2, 3.5183, tolerating: 0.001)
-  let assert Ok(v3) = summarize.variance(x3)
+  let assert Ok(v3) = stats.variance(x3)
   assert float.loosely_equals(v3, 2.0397, tolerating: 0.001)
-  let assert Ok(v4) = summarize.variance(x4)
+  let assert Ok(v4) = stats.variance(x4)
   assert float.loosely_equals(v4, 0.6183, tolerating: 0.001)
 }
 
@@ -49,13 +52,13 @@ pub fn skewness_test() -> Nil {
   let x2 = [-1.3077, -0.4336, 0.3426, 3.5784, 2.7694]
   let x3 = [-1.3499, 3.0349, 0.7254, -0.0631, 0.7147]
   let x4 = [-0.205, -0.1241, 1.4897, 1.409, 1.4172]
-  let assert Ok(sk1) = summarize.skewness(x1)
+  let assert Ok(sk1) = stats.skewness(x1)
   assert float.loosely_equals(sk1, -0.9362, tolerating: 0.001)
-  let assert Ok(sk2) = summarize.skewness(x2)
+  let assert Ok(sk2) = stats.skewness(x2)
   assert float.loosely_equals(sk2, 0.2333, tolerating: 0.001)
-  let assert Ok(sk3) = summarize.skewness(x3)
+  let assert Ok(sk3) = stats.skewness(x3)
   assert float.loosely_equals(sk3, 0.4363, tolerating: 0.001)
-  let assert Ok(sk4) = summarize.skewness(x4)
+  let assert Ok(sk4) = stats.skewness(x4)
   assert float.loosely_equals(sk4, -0.4075, tolerating: 0.001)
 }
 
@@ -64,53 +67,53 @@ pub fn kurtosis_test() -> Nil {
   let x2 = [-1.3077, -0.4336, 0.3426, 3.5784, 2.7694]
   let x3 = [-1.3499, 3.0349, 0.7254, -0.0631, 0.7147]
   let x4 = [-0.205, -0.1241, 1.4897, 1.409, 1.4172]
-  let assert Ok(k1) = summarize.kurtosis(x1)
+  let assert Ok(k1) = stats.kurtosis(x1)
   assert float.loosely_equals(k1, 2.706698, tolerating: 0.001)
-  let assert Ok(k2) = summarize.kurtosis(x2)
+  let assert Ok(k2) = stats.kurtosis(x2)
   assert float.loosely_equals(k2, 1.406896, tolerating: 0.001)
-  let assert Ok(k3) = summarize.kurtosis(x3)
+  let assert Ok(k3) = stats.kurtosis(x3)
   assert float.loosely_equals(k3, 2.37832, tolerating: 0.001)
-  let assert Ok(k4) = summarize.kurtosis(x4)
+  let assert Ok(k4) = stats.kurtosis(x4)
   assert float.loosely_equals(k4, 1.17596, tolerating: 0.001)
 }
 
 pub fn geometric_mean_test() -> Nil {
   let x1 = [1.0, 2.0, 3.0, 4.0]
   let x2 = [10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0]
-  let assert Ok(gm1) = summarize.geometric_mean(x1)
+  let assert Ok(gm1) = stats.geometric_mean(x1)
   assert float.loosely_equals(gm1, 2.21336, tolerating: 0.001)
-  let assert Ok(gm2) = summarize.geometric_mean(x2)
+  let assert Ok(gm2) = stats.geometric_mean(x2)
   assert float.loosely_equals(gm2, 45.287286, tolerating: 0.001)
 }
 
 pub fn harmonic_mean_test() -> Nil {
   let x1 = [1.0, 2.0, 3.0]
   let x2 = [10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0]
-  let assert Ok(gm1) = summarize.harmonic_mean(x1)
+  let assert Ok(gm1) = stats.harmonic_mean(x1)
   assert float.loosely_equals(
     gm1,
     { 3.0 /. { 1.0 /. 1.0 +. 1.0 /. 2.0 +. 1.0 /. 3.0 } },
     tolerating: 0.001,
   )
-  let assert Ok(gm2) = summarize.harmonic_mean(x2)
+  let assert Ok(gm2) = stats.harmonic_mean(x2)
   assert float.loosely_equals(gm2, 34.141715, tolerating: 0.001)
 }
 
 pub fn generalized_mean_test() -> Nil {
   let x = [10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0]
-  let assert Ok(gm1) = summarize.generalized_mean(x, 3.5)
+  let assert Ok(gm1) = stats.generalized_mean(x, 3.5)
   assert float.loosely_equals(gm1, 69.1625879, tolerating: 0.001)
-  let assert Ok(gm2) = summarize.generalized_mean(x, -2.5)
+  let assert Ok(gm2) = stats.generalized_mean(x, -2.5)
   assert float.loosely_equals(gm2, 22.4655896, tolerating: 0.001)
 }
 
 pub fn moment_test() -> Nil {
   let x1 = [1.0, 2.0, 3.0, 4.0]
-  let assert Ok(mmt1) = summarize.moment(x1, 1)
+  let assert Ok(mmt1) = stats.moment(x1, 1)
   assert mmt1 == 0.0
-  let assert Ok(mmt2) = summarize.moment(x1, 2)
+  let assert Ok(mmt2) = stats.moment(x1, 2)
   assert mmt2 == 1.25
-  let assert Ok(mmt6) = summarize.moment(x1, 6)
+  let assert Ok(mmt6) = stats.moment(x1, 6)
   assert mmt6 == 5.703125
 }
 
@@ -119,26 +122,26 @@ pub fn median_test() -> Nil {
   let x2 = [15.0, 1.0, 5.0, 8.0, 10.0, 12.0]
   let x3 = [1.0, 5.0, 8.0, 10.0, 12.0, 1.0, 5.0, 8.0, 10.0, 12.0]
   let x4 = [15.0, 1.0, 5.0, 8.0, 10.0, 12.0, 8.0, 10.0, 12.0, 15.0, 1.0, 5.0]
-  let assert Ok(md1) = summarize.median(x1)
+  let assert Ok(md1) = stats.median(x1)
   assert md1 == 8.0
-  let assert Ok(md2) = summarize.median(x2)
+  let assert Ok(md2) = stats.median(x2)
   assert md2 == 9.0
-  let assert Ok(md3) = summarize.median(x3)
+  let assert Ok(md3) = stats.median(x3)
   assert md3 == 8.0
-  let assert Ok(md4) = summarize.median(x4)
+  let assert Ok(md4) = stats.median(x4)
   assert md4 == 9.0
-  let assert Ok(md5) = summarize.median([0.0, 2.0])
+  let assert Ok(md5) = stats.median([0.0, 2.0])
   assert md5 == 1.0
 }
 
 pub fn iqr_test() -> Nil {
   let x1 = [15.0, 1.0, 5.0, 8.0, 10.0, 12.0, 8.0, 10.0, 12.0, 15.0, 1.0, 5.0]
-  let assert Ok(iqr1) = summarize.interquartile_range(x1)
+  let assert Ok(iqr1) = stats.interquartile_range(x1)
   assert iqr1 == 7.0
   // edge cases
-  let assert Ok(iqr1val) = summarize.interquartile_range([23_948.9])
+  let assert Ok(iqr1val) = stats.interquartile_range([23_948.9])
   assert iqr1val == 0.0
-  let assert Ok(iqr2val) = summarize.interquartile_range([0.0, 100.0])
+  let assert Ok(iqr2val) = stats.interquartile_range([0.0, 100.0])
   assert iqr2val == 50.0
 }
 
@@ -246,6 +249,106 @@ pub fn mad_test() -> Nil {
     -1.74316091,
     -0.82659092,
   ]
-  let assert Ok(mad) = summarize.median_absolute_deviation(x1)
+  let assert Ok(mad) = stats.median_absolute_deviation(x1)
   assert float.loosely_equals(mad, 0.8283261, tolerating: 0.0001)
+}
+
+pub fn winsorize_test() -> Nil {
+  let x1 = [
+    0.1,
+    1.0,
+    12.0,
+    14.0,
+    16.0,
+    18.0,
+    19.0,
+    21.0,
+    24.0,
+    26.0,
+    29.0,
+    32.0,
+    33.0,
+    35.0,
+    39.0,
+    40.0,
+    41.0,
+    44.0,
+    99.0,
+    125.0,
+  ]
+  let assert Ok(w1) = x1 |> stats.winsorize(0.05, 0.95)
+  assert w1
+    == [
+      1.0,
+      1.0,
+      12.0,
+      14.0,
+      16.0,
+      18.0,
+      19.0,
+      21.0,
+      24.0,
+      26.0,
+      29.0,
+      32.0,
+      33.0,
+      35.0,
+      39.0,
+      40.0,
+      41.0,
+      44.0,
+      99.0,
+      99.0,
+    ]
+  // okay let's try some edge cases.
+  let x2 = [0.0]
+  let assert Ok(oneval) = x2 |> stats.winsorize(0.05, 0.95)
+  assert oneval == x2
+
+  let x3 = [0.0, 100.0]
+  let assert Ok(twovals) = x3 |> stats.winsorize(0.05, 0.95)
+  assert twovals == x3
+
+  let x4 = [0.0, 50.0, 100.0]
+  let assert Ok(twovals) = x4 |> stats.winsorize(0.05, 0.95)
+  assert twovals == [50.0, 50.0, 50.0]
+}
+
+pub fn quantile_test() -> Nil {
+  let x1 = list.range(1, 100) |> list.map(int.to_float)
+
+  // First test some erros
+  let nonincreasing = [0.0, 0.5, 0.4, 0.3, 0.2]
+  let invalid_quantiles = [1.0, 2.0, 3.0]
+  let duplicates = [0.1, 0.1, 0.1]
+  let assert Error(InvalidParameter(non_inc_err)) =
+    stats.quantiles(x1, nonincreasing)
+  assert non_inc_err
+    == "Please provide ranks in strictly increasing order, without duplicates."
+  let assert Error(InvalidParameter(invalid_err)) =
+    stats.quantiles(x1, invalid_quantiles)
+  assert invalid_err == "Rank must be between 0.0 and 1.0."
+  let assert Error(InvalidParameter(dup_err)) = stats.quantiles(x1, duplicates)
+  assert dup_err
+    == "Please provide ranks in strictly increasing order, without duplicates."
+
+  // Ok now test real values. \
+  // These have been verified in numpy.
+  let assert Ok(qs1) = stats.quantiles(x1, [0.0, 0.25, 0.5, 0.75, 1.0])
+  assert qs1 == [1.0, 25.75, 50.5, 75.25, 100.0]
+  // This test was provided b
+  let x2 = [1.0, 3.0, 6.0, 10.0]
+  let assert Ok([q]) = stats.quantiles(x2, [0.75])
+  assert q == 7.0
+
+  // Test some weird edge cases. YOLO.
+  // Only one element in the input.
+  let x3 = [100.0]
+  let assert Ok(qs3) = stats.quantiles(x3, [0.0, 0.25, 0.5, 0.75, 1.0])
+  assert qs3 == [100.0, 100.0, 100.0, 100.0, 100.0]
+
+  // Only two elements in the input.
+  let x4 = [0.0, 100.0]
+  let assert Ok(qs4) = stats.quantiles(x4, [0.0, 0.25, 0.5, 0.75, 1.0])
+  assert qs4 == [0.0, 25.0, 50.0, 75.0, 100.0]
 }

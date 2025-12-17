@@ -1,26 +1,32 @@
-//// This module defines functions that compute the
-//// summary statistics for a given dataset.
-////
-//// A summary statistic is a function that takes many
-//// data points and returns one single value that describes a
-//// property of the dataset.
+//// This module defines functions that compute statistics
+//// over a given sample dataset.
 ////
 //// Each function within this module takes as its first
 //// argument a dataset, which is a list of floats.
 ////
 //// Every function within this module could potentially
-//// produce StatsError. For more information about the
-//// what each error represents, please refer to gelman/error
+//// produce StatsError. The possible errors within this
+//// module are:
 ////
+//// - EmptyDataset: user supplied an input with no values.
+//// - NegativeOrZeroValue: the dataset contains at least one
+////     value that is either zero or negative, but the
+////     mathematical transformation is undefined in that range
+////     (e.g. log)
+//// - NegativeValue: the dataset contains at least one
+////     value that is either negative, but the mathematical
+////     transformation is undefined in that range (e.g. sqrt)
+//// - InvalidParameter: parameters that were not defined were
+////     provided, e.g. negative moment.
 
 import gleam/float
+import gleam/int
 import gleam/list
 import gleam/result
 
-import gelman/discretize
 import gelman/error.{type StatsError, EmptyDataset, InvalidParameter}
 import gelman/internal/helpers
-import gelman/internal/nonempty/summarize as nonempty
+import gelman/internal/statistics as nonempty
 
 /// Computes the mean of a dataset in one pass.
 pub fn mean(dataset: List(Float)) -> Result(Float, StatsError) {
@@ -175,7 +181,7 @@ fn average_middle_two_elements(dataset: List(Float), n: Int) -> Float {
 // which is the 75th percentile minus the 25th percentile.
 pub fn interquartile_range(dataset: List(Float)) -> Result(Float, StatsError) {
   dataset
-  |> discretize.quantiles([0.25, 0.75])
+  |> quantiles([0.25, 0.75])
   |> result.map(fn(x) {
     case x {
       [l, r] -> r -. l
@@ -197,4 +203,49 @@ pub fn median_absolute_deviation(
     dataset
     |> list.map(fn(x) { float.absolute_value(x -. m) })
   median(deviations)
+}
+
+// replaces extreme data points (outliers) with the values
+// within a specified percentile range, which helps to reduce their
+// impact on statistical analyses without discarding data points entirely
+// This function preserves the size of the dataset.
+// Unfortunately, this is n log n, as we do not have a quickselect
+// algorithm for linked lists. Alas!
+pub fn winsorize(
+  dataset: List(Float),
+  left: Float,
+  right: Float,
+) -> Result(List(Float), StatsError) {
+  case dataset, left >. 0.0 && left <. 1.0, right >. 0.0 && right <. 1.0 {
+    _, False, _ ->
+      Error(InvalidParameter("Winsorize bounds between 0.0 and 0.1"))
+    _, _, False ->
+      Error(InvalidParameter("Winsorize bounds between 0.0 and 0.1"))
+    [], _, _ -> Error(EmptyDataset)
+    [x], _, _ -> Ok([x])
+    [x, y], _, _ -> Ok([x, y])
+    _, _, _ ->
+      dataset
+      |> nonempty.winsorize(left, right)
+      |> Ok
+  }
+}
+
+pub fn quantiles(
+  dataset: List(Float),
+  qs: List(Float),
+) -> Result(List(Float), StatsError) {
+  case dataset {
+    [] -> Error(EmptyDataset)
+    [x] -> Ok(list.repeat(x, list.length(qs)))
+    _ -> {
+      let n = list.length(dataset)
+      let sortedwithrank =
+        dataset
+        |> list.sort(float.compare)
+        |> list.zip(list.range(0, n))
+      use fractionals <- result.try(nonempty.get_fractional_indices(qs, n))
+      Ok(nonempty.quantiles(sortedwithrank, fractionals, int.to_float(n)))
+    }
+  }
 }

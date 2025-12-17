@@ -3,6 +3,7 @@ version = "1.0.0"
 
 licences = ["Apache-2.0"]
 repository = { type = "github", user = "daikonradish", repo = "gelman" }
+description = "Purely functional, purely Gleam implementation of statistical methods."
 # Fill out these fields if you intend to generate HTML documentation or publish
 # your project to the Hex package manager.
 #
